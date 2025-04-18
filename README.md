@@ -33,6 +33,8 @@ To archive the sessions of my internet DJ friends, and local radio shows that ar
   - support MySQL, Postgres, SQLite
 * Send output to a Discord channel
 * Add option to filter copyright-protected content
+* Record date/time of airing, add to tags in audio file, playlist, output directory, anywhere else you want
+* Docker image
 * Offer to WUGA and/or WUOG for provisioning website download or podcast service
  - Copyright issues
 * Frontend - Drupal?
