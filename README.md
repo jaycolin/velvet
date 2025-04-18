@@ -1,4 +1,5 @@
 # rippy - a Perl-based audio stream ripper
+[executable is in ./bin/](bin/rippy)
 
 ## What is this?
 A command line utility for saving individual audio files from an audio stream URL
