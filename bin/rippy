@@ -3,7 +3,6 @@ use strict;
 use warnings;
 use IO::Socket;
 use URI;
-use Encode;
 use File::Spec::Functions;
 
 # my $url = 'http://116.202.241.212:8010/stream';
