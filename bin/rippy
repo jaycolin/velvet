@@ -1,0 +1,98 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use IO::Socket;
+use URI;
+use Encode;
+use File::Spec::Functions;
+
+# my $url = 'http://116.202.241.212:8010/stream';
+my $url = shift @ARGV;
+my $outdir = shift @ARGV;
+$outdir ||= '.';
+unless ( -d $outdir) { mkdir($outdir) };
+
+# Parse URL
+my $uri  = URI->new($url);
+my $host = $uri->host;
+my $port = $uri->port || 80;
+my $path = $uri->path;
+
+# Connect to stream
+my $socket = IO::Socket::INET->new(
+  PeerAddr => $host,
+  PeerPort => $port,
+  Proto    => 'tcp',
+) or die "Cannot connect to $host:$port: $!";
+
+# Send request with metadata support
+print $socket "GET $path HTTP/1.0\r\n";
+print $socket "Host: $host\r\n";
+print $socket "Icy-MetaData:1\r\n";
+print $socket "Connection: close\r\n\r\n";
+
+# Read response headers
+my %headers;
+while (my $line = <$socket>) {
+  last if $line =~ /^\s*$/;
+  if ($line =~ /^(\S+):\s*(.*)$/) {
+    $headers{lc $1} = $2;
+  } elsif ($line =~ /^ICY\s+200\s+OK/i) {
+    $headers{'icy-response'} = 'OK';
+  }
+}
+
+# Get icy-metaint
+my $metaint = $headers{'icy-metaint'} || 0;
+die "No icy-metaint provided by server." unless $metaint;
+
+print "Connected to stream. Metadata interval: $metaint bytes\n";
+
+my $current_title = '';
+my $tracknum = 1;
+my $fh;
+my $buffer;
+my $playfh;
+open($playfh, ">", catfile(${outdir}, "playlist.m3u")) or die "Cannot write playlist file $outdir/playlist.m3u: $!";
+print $playfh ("#EXTM3U\n");
+
+while(1){
+  # Read and skip audio data
+  read($socket, $buffer, $metaint);
+  print $fh ($buffer) if $fh;
+
+  # Read metadata block length
+  read($socket, $buffer, 1);
+  my $len = unpack('C', $buffer) * 16;
+
+  # Read and parse metadata
+  if($len > 0){
+    read($socket, $buffer, $len);
+    if($buffer =~ /StreamTitle='(.*?)';/){
+      my $title = $1;
+      if ($title ne $current_title) {
+        print "Now Playing: $title\n";
+        $current_title = $title;
+
+        # Close previous file
+        close($fh) if $fh;
+
+        # Open new file
+        my $filename = $title;
+        $filename =~ tr{/}{_};
+        $filename = catfile($outdir, "${filename}.mp3");
+        open($fh, '>', $filename) or warn "Cannot open $filename: $!";
+        binmode($fh);
+
+        # append to playlist
+        printf $playfh ("#EXTINF:%d,%s\n%s.mp3\n", $tracknum, $title, $title);
+        $playfh->flush();
+
+      }
+    }
+  }
+  # short sleep
+  select(undef, undef, undef, 0.25);
+}
+
+
