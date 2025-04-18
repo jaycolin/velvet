@@ -41,7 +41,7 @@ while (my $line = <$socket>) {
   }
 }
 
-# Get icy-metaint
+# how many bytes before start metadata
 my $metaint = $headers{'icy-metaint'} || 0;
 die "No icy-metaint provided by server." unless $metaint;
 
@@ -56,7 +56,7 @@ open($playfh, ">", catfile(${outdir}, "playlist.m3u")) or die "Cannot write play
 print $playfh ("#EXTM3U\n");
 
 while(1){
-  # Read and skip audio data
+  # Read audio, write to file
   read($socket, $buffer, $metaint);
   print $fh ($buffer) if $fh;
 
@@ -64,7 +64,7 @@ while(1){
   read($socket, $buffer, 1);
   my $len = unpack('C', $buffer) * 16;
 
-  # Read and parse metadata
+  # Read metadata
   if($len > 0){
     read($socket, $buffer, $len);
     if($buffer =~ /StreamTitle='(.*?)';/){
@@ -78,7 +78,8 @@ while(1){
 
         # Open new file
         my $filename = $title;
-        $filename =~ tr{/}{_};
+        # sanitize the filename ... TODO more, as needed
+        $filename =~ tr{/\.}{_}; # 
         $filename = catfile($outdir, "${filename}.mp3");
         open($fh, '>', $filename) or warn "Cannot open $filename: $!";
         binmode($fh);
