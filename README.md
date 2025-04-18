@@ -26,6 +26,6 @@ To archive the sessions of my internet DJ friends, and local radio shows that ar
 * Offer to WUGA and/or WUOG for provisioning website download or podcast service
  - Copyright issues
 
-![screenshot of the playlist opened with VLC](snapshot.png)
+![screenshot of the playlist opened with VLC](screenshot.png)
 
 
