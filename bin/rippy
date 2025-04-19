@@ -4,18 +4,24 @@ use warnings;
 use IO::Socket;
 use URI;
 use File::Spec::Functions;
+use Getopt::Long qw(:config no_ignore_case);
 
-# my $url = 'http://116.202.241.212:8010/stream';
-my $url = shift @ARGV;
-my $outdir = shift @ARGV;
+my ($url, $outdir, $configfile);
+GetOptions('c|config=s' => \$configfile, 'o|outdir=s' => \$outdir, 'u|url=s' => \$url);
+$url ||= shift @ARGV;
+$outdir ||= shift @ARGV;
 $outdir ||= '.';
-unless ( -d $outdir) { mkdir($outdir) };
+unless ( -d $outdir) {
+  print "Creating output directory: $outdir\n";
+  mkdir($outdir);
+}
 
 # Parse URL
 my $uri  = URI->new($url);
 my $host = $uri->host;
 my $port = $uri->port || 80;
 my $path = $uri->path;
+$path ||= '/'; # or else the request will fail and you won't get any ICY
 
 # Connect to stream
 my $socket = IO::Socket::INET->new(
